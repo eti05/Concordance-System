@@ -16,7 +16,7 @@ Either way gives the same files:
 
 Then open the unpacked folder and follow the Quick Start below. On macOS and
 Linux, if the launcher will not run, restore its executable bit first with
-`chmod +x run.sh run.command`.
+`chmod +x run.sh run.command stop.command clean.command`.
 
 The project uses:
 
@@ -84,23 +84,36 @@ current Tk, and on Debian or Ubuntu it comes from `sudo apt install python3-tk`.
 Start Docker, then start the project with the launcher for your system. There
 is one for each, and they do exactly the same work:
 
-| System | File | How to start it |
-|---|---|---|
-| macOS | `run.command` | Double click it |
-| Windows | `run.bat` | Double click it |
-| Linux, or any terminal | `run.sh` | `./run.sh` |
+| What you want | macOS | Windows | Any terminal |
+|---|---|---|---|
+| **Start** the system | `run.command` | `run.bat` | `./run.sh` |
+| **Stop** it when finished | `stop.command` | `stop.bat` | `./run.sh --stop` |
+| **Remove** everything it created | `clean.command` | `clean.bat` | `./run.sh --clean` |
 
-The launcher does every manual step described further down: it creates the
-virtual environment and installs the packages, starts the Oracle container,
-waits until the database is ready, builds the schema and loads the corpus on
-the first run, and finally opens the application.
+On macOS and Windows these are all double click files, so no terminal is
+needed at any point.
 
-Both launchers accept the same two arguments:
+`run` does every manual step described further down: it creates the virtual
+environment and installs the packages, starts the Oracle container, waits until
+the database is ready, builds the schema and loads the corpus on the first run,
+and finally opens the application.
 
-| Argument | What it does |
-|---|---|
-| `--reset` | Rebuilds the schema and reloads the corpus from scratch |
-| `--stop` | Stops the database container; the loaded data is kept |
+`stop` shuts the database container down and frees the memory it was using. The
+loaded corpus stays in a Docker volume, so the next start takes seconds.
+
+`clean` is for when the project is no longer needed: it removes the container,
+the volume holding the corpus and the virtual environment, after asking for
+confirmation. The project's own files are never touched, so `run` will rebuild
+everything from scratch afterwards.
+
+From a terminal, `run.sh` and `run.bat` also accept `--reset`, which rebuilds
+the schema and reloads the corpus without removing anything else.
+
+Stopping the container leaves Docker itself running in the background. Docker
+is deliberately not shut down by these scripts, because doing so would also
+stop any other container on the machine, which is not this project's business.
+Quit it the usual way when you want the memory back: quit Docker Desktop from
+the menu bar, or run `colima stop` if you use Colima.
 
 The first run takes a few minutes, because Oracle has to initialise itself and
 the corpus has to be tokenized and inserted. Later runs start in seconds, since
@@ -115,6 +128,27 @@ by a tool that dropped its executable bit, make it runnable again with:
 ```bash
 chmod +x run.sh run.command
 ```
+
+### If something goes wrong
+
+| What you see | What it means |
+|---|---|
+| `Docker is installed but not running` | Start Docker Desktop or Colima, then try again. |
+| `The database did not become ready in time` | Oracle is still starting, or it failed. Run `docker compose logs oracle` to see what it says. |
+| `ORACLE_PASSWORD environment variable is not set` | The application was started by hand rather than through the launcher. See step 4 below. |
+| `Can't find a usable init.tcl` | Python cannot find its graphics library. This is a Python installation problem, described next. |
+
+On Windows, Python keeps its Tcl library inside the base installation, under
+`<Python>\tcl`, and a virtual environment does not carry it along. When tkinter
+cannot find it, the database starts normally and then the window fails to open
+with `Can't find a usable init.tcl`.
+
+`run.bat` handles this: it asks Python where its base installation is and points
+`TCL_LIBRARY` and `TK_LIBRARY` at the right folders, whatever the Python version
+and install location happen to be. If the folder genuinely is not there, Python
+was installed without its graphics component. Repair it from Settings, Apps,
+Python, Modify, and tick **tcl/tk and IDLE**; then delete the `.venv` folder and
+start the launcher again.
 
 ### The manual way, step by step
 
@@ -228,9 +262,13 @@ When using Oracle Cloud, `ORACLE_DSN` should contain the required TNS alias.
 
 ```text
 concordance/
-    run.command         Launcher for macOS (double click)
-    run.bat             Launcher for Windows (double click)
-    run.sh              Launcher for Linux and for any terminal
+    run.command         Start, on macOS (double click)
+    run.bat             Start, on Windows (double click)
+    run.sh              Start, on Linux or from any terminal
+    stop.command        Stop, on macOS
+    stop.bat            Stop, on Windows
+    clean.command       Remove everything created, on macOS
+    clean.bat           Remove everything created, on Windows
     docker-compose.yml  The Oracle container the project runs against
     main.py             Starts the application
     config.py           Oracle connection settings

@@ -31,6 +31,32 @@ if /I "%~1"=="--stop" (
     pause & exit /b 0
 )
 
+if /I "%~1"=="--clean" (
+    echo This removes the database container, the loaded corpus and the local
+    echo virtual environment. The project files themselves are not touched.
+    set /p "ANSWER=Type 'yes' to continue: "
+    if /I not "!ANSWER!"=="yes" (
+        echo Cancelled.
+        pause & exit /b 0
+    )
+    docker info >nul 2>&1
+    if errorlevel 1 (
+        echo Docker is not running, so the container could not be removed.
+        echo Start Docker and run this again to remove the data volume.
+    ) else (
+        echo Removing the container and its data volume ...
+        docker compose down --volumes >nul 2>&1
+    )
+    echo Removing the virtual environment ...
+    if exist ".venv" rmdir /s /q ".venv"
+    if exist "__pycache__" rmdir /s /q "__pycache__"
+    if exist "ui\__pycache__" rmdir /s /q "ui\__pycache__"
+    if exist "tests\__pycache__" rmdir /s /q "tests\__pycache__"
+    if exist ".pytest_cache" rmdir /s /q ".pytest_cache"
+    echo Done. Nothing of this project is left running or stored.
+    pause & exit /b 0
+)
+
 where docker >nul 2>&1
 if errorlevel 1 (
     echo ERROR: Docker is not installed or not on PATH.
@@ -55,6 +81,44 @@ if not exist ".venv\Scripts\python.exe" (
     ".venv\Scripts\python.exe" -m pip install --quiet -r requirements.txt
 )
 set "PYTHON=.venv\Scripts\python.exe"
+
+REM ---------------------------------------------------------- Tcl and Tk ---
+REM On Windows the Tcl library lives in the base Python installation, under
+REM <prefix>\tcl, and a virtual environment does not carry it along. When that
+REM happens tkinter cannot find init.tcl and the window never opens. Ask Python
+REM where its base installation is and point Tcl and Tk at it. Nothing is
+REM hardcoded, so this works for any Python version and any install location,
+REM and an existing setting is left alone.
+if not defined TCL_LIBRARY (
+    for /f "delims=" %%p in ('%PYTHON% -c "import sys; print(sys.base_prefix)" 2^>nul') do set "PYBASE=%%p"
+    if defined PYBASE (
+        for /d %%d in ("!PYBASE!\tcl\tcl8*") do set "TCL_LIBRARY=%%d"
+        for /d %%d in ("!PYBASE!\tcl\tk8*")  do set "TK_LIBRARY=%%d"
+        for /d %%d in ("!PYBASE!\tcl\tcl9*") do set "TCL_LIBRARY=%%d"
+        for /d %%d in ("!PYBASE!\tcl\tk9*")  do set "TK_LIBRARY=%%d"
+    )
+)
+
+REM Fail early with an explanation instead of a traceback from deep inside Tk.
+REM tkinter.Tcl() starts the Tcl interpreter without opening a window, so this
+REM check finds a missing init.tcl without making anything flash on screen.
+%PYTHON% -c "import tkinter; tkinter.Tcl()" >nul 2>&1
+if errorlevel 1 (
+    echo.
+    echo ERROR: Python found, but its graphics library ^(Tk^) cannot start.
+    echo.
+    echo This is an installation problem and not a problem with the project.
+    echo The usual cause on Windows is a Python install whose Tcl folder is
+    echo missing, which happens when Python was installed without the
+    echo "tcl/tk and IDLE" option.
+    echo.
+    echo The fix is to repair the Python installation: open Settings, Apps,
+    echo find Python, choose Modify, and make sure "tcl/tk and IDLE" is ticked.
+    echo Then delete the .venv folder here and run this file again.
+    echo.
+    if defined TCL_LIBRARY echo Tcl was looked for in: !TCL_LIBRARY!
+    pause & exit /b 1
+)
 
 REM ----------------------------------------------------------- database ---
 echo 1/3  Starting the Oracle database ...

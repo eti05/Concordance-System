@@ -33,6 +33,27 @@ if [ "${1:-}" = "--stop" ]; then
     exit 0
 fi
 
+if [ "${1:-}" = "--clean" ]; then
+    echo "This removes the database container, the loaded corpus and the local"
+    echo "virtual environment. The project files themselves are not touched."
+    printf "Type 'yes' to continue: "
+    read -r answer
+    [ "$answer" = "yes" ] || { echo "Cancelled."; exit 0; }
+    if docker info >/dev/null 2>&1; then
+        echo "Removing the container and its data volume ..."
+        docker compose down --volumes >/dev/null 2>&1 || true
+    else
+        echo "Docker is not running, so the container could not be removed."
+        echo "Start Docker and run this again to remove the data volume."
+    fi
+    echo "Removing the virtual environment ..."
+    rm -rf "$VENV"
+    find . -type d -name '__pycache__' -prune -exec rm -rf {} + 2>/dev/null || true
+    rm -rf .pytest_cache
+    echo "Done. Nothing of this project is left running or stored."
+    exit 0
+fi
+
 command -v docker >/dev/null 2>&1 || die "Docker is not installed or not on PATH."
 docker info >/dev/null 2>&1 || die "Docker is installed but not running. Start it and try again."
 
