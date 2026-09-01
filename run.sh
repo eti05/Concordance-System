@@ -119,5 +119,5 @@ fi
 
 # ------------------------------------------------------------------- app ---
 echo "3/3  Opening the Concordance System. Look for a new window."
-"$PYTHON" main.py
+"$PYTHON" scripts/launch.py
 echo "Closed. Run './run.sh --stop' when you want to shut the database down."

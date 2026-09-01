@@ -6,6 +6,12 @@ The system loads plain text files, splits them into words, and stores the exact 
 
 The corpus contains six children's classics from Project Gutenberg.
 
+The project uses:
+
+- Oracle Database
+- Python
+- CustomTkinter
+
 ## Downloading the project
 
 Either way gives the same files:
@@ -17,12 +23,6 @@ Either way gives the same files:
 Then open the unpacked folder and follow the Quick Start below. On macOS and
 Linux, if the launcher will not run, restore its executable bit first with
 `chmod +x run.sh run.command stop.command clean.command`.
-
-The project uses:
-
-- Oracle Database
-- Python
-- CustomTkinter
 
 ## Architecture
 
@@ -143,12 +143,19 @@ On Windows, Python keeps its Tcl library inside the base installation, under
 cannot find it, the database starts normally and then the window fails to open
 with `Can't find a usable init.tcl`.
 
-`run.bat` handles this: it asks Python where its base installation is and points
-`TCL_LIBRARY` and `TK_LIBRARY` at the right folders, whatever the Python version
-and install location happen to be. If the folder genuinely is not there, Python
-was installed without its graphics component. Repair it from Settings, Apps,
-Python, Modify, and tick **tcl/tk and IDLE**; then delete the `.venv` folder and
-start the launcher again.
+`scripts/launch.py` handles this. It finds the `tcl` folder inside the base
+Python installation, points `TCL_LIBRARY` and `TK_LIBRARY` at the newest
+version it holds, and only then starts the interface. Nothing is hardcoded, so
+any Python version and any install location work. The search is done in Python
+rather than in `run.bat` on purpose: the path may contain characters outside
+ASCII, such as a user name written in Hebrew, and such a path cannot be
+captured reliably through a cmd pipe.
+
+If Tk still cannot start, the launcher stops with a message naming the folders
+it searched and the values it set, which says whether the library is missing or
+merely somewhere unexpected. A missing library means Python was installed
+without its graphics component: repair it from Settings, Apps, Python, Modify,
+tick **tcl/tk and IDLE**, then delete the `.venv` folder and start again.
 
 ### The manual way, step by step
 
@@ -281,7 +288,7 @@ concordance/
     ui/                  User interface
     sql/                 Schema, indexes, trigger and views
     data/                Corpus files and corpus.csv
-    scripts/             Database setup and corpus loading scripts
+    scripts/             Database setup, corpus loading, and launch.py
     tests/               Python tests
 ```
 
