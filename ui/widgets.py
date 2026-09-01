@@ -385,6 +385,14 @@ class ScrollHost(tk.Frame):
         # Wait for Tk to finish layout calculations before measuring.
         self.update_idletasks()
 
+        # update_idletasks() lets Tk run the work it had queued, and that work
+        # can destroy widgets. A screen that rebuilds itself while this callback
+        # was waiting is enough to leave self.content gone, so the check at the
+        # top of the method is no longer good enough by this point. Measuring a
+        # destroyed widget raises "bad window path name".
+        if not self.winfo_exists() or not self.content.winfo_exists():
+            return
+
         host_width = self.winfo_width()
         host_height = self.winfo_height()
 
@@ -1010,6 +1018,14 @@ class Table(ctk.CTkFrame):
 
         # Read the final size after Tk finishes resizing.
         self.update_idletasks()
+
+        # For the same reason as in ScrollHost._apply: update_idletasks() can
+        # destroy widgets, so the ones about to be placed are checked again
+        # rather than trusting the check made before it ran.
+        if not (self.winfo_exists()
+                and self.tree.winfo_exists()
+                and self._scroll.winfo_exists()):
+            return
 
         width = max(self.winfo_width(), 2)
         height = max(self.winfo_height(), 2)
