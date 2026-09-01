@@ -63,11 +63,40 @@ if errorlevel 1 (
     pause & exit /b 1
 )
 
+REM Docker being installed is not the same as Docker running. Start Docker
+REM Desktop here rather than asking someone who double clicked an icon to go
+REM and do it by hand. %ProgramFiles% is expanded by cmd itself, so no path
+REM has to be captured from a pipe.
+REM Kept flat rather than nested in an if block: a label and a goto inside a
+REM parenthesised block are not handled reliably by cmd.
 docker info >nul 2>&1
-if errorlevel 1 (
-    echo ERROR: Docker is installed but not running. Start Docker Desktop and try again.
+if not errorlevel 1 goto dockerready
+
+set "DOCKERAPP=%ProgramFiles%\Docker\Docker\Docker Desktop.exe"
+if not exist "%DOCKERAPP%" (
+    echo ERROR: Docker is installed but not running, and Docker Desktop was not
+    echo found in its usual place. Start Docker and run this again.
     pause & exit /b 1
 )
+
+echo Starting Docker Desktop ...
+start "" "%DOCKERAPP%"
+echo      Waiting for Docker to be ready ...
+set "DTRIES=0"
+
+:waitdocker
+docker info >nul 2>&1
+if not errorlevel 1 goto dockerready
+set /a DTRIES+=1
+if !DTRIES! GEQ 60 (
+    echo ERROR: Docker did not become ready in time.
+    echo Start Docker Desktop by hand and run this again.
+    pause & exit /b 1
+)
+timeout /t 2 /nobreak >nul
+goto waitdocker
+
+:dockerready
 
 REM ------------------------------------------------------------- python ---
 if not exist ".venv\Scripts\python.exe" (

@@ -55,7 +55,34 @@ if [ "${1:-}" = "--clean" ]; then
 fi
 
 command -v docker >/dev/null 2>&1 || die "Docker is not installed or not on PATH."
-docker info >/dev/null 2>&1 || die "Docker is installed but not running. Start it and try again."
+
+# Docker being installed is not the same as Docker running, and asking someone
+# who double clicked an icon to go and start it by hand is a poor answer. Start
+# the runtime here when it can be identified, and only give up if it cannot.
+if ! docker info >/dev/null 2>&1; then
+    if command -v colima >/dev/null 2>&1; then
+        echo "Starting Colima, the Docker runtime ..."
+        colima start || die "Colima could not start. Run 'colima start' by hand to see why."
+    elif [ -d "/Applications/Docker.app" ]; then
+        echo "Starting Docker Desktop ..."
+        open -a Docker
+    elif command -v systemctl >/dev/null 2>&1; then
+        echo "Starting the Docker service ..."
+        sudo systemctl start docker || true
+    else
+        die "Docker is installed but not running, and no way to start it was found.
+Start Docker and run this again."
+    fi
+
+    printf "     Waiting for Docker to be ready "
+    for _ in $(seq 1 60); do
+        docker info >/dev/null 2>&1 && break
+        printf "."
+        sleep 2
+    done
+    echo
+    docker info >/dev/null 2>&1 || die "Docker did not become ready in time. Start it by hand and run this again."
+fi
 
 # ---------------------------------------------------------------- python ---
 # Prefer a Python that ships a modern Tk. The macOS system Tk is 8.5 and

@@ -52,8 +52,9 @@ handled by the launcher.
 | **Docker** | Runs the Oracle database. Docker Desktop, Colima or Docker Engine all work. | `docker info` |
 | **Python 3.9+ with Tk 8.6+** | Runs the application and its interface. | `python3 -c "import tkinter; print(tkinter.TkVersion)"` |
 
-Docker has to be **running**, not only installed, before the launcher is
-started. The Python packages (`oracledb` and `customtkinter`, listed in
+Docker does not have to be started by hand: the launcher starts Docker Desktop,
+Colima or the Docker service itself when it finds one, and waits for it. The
+Python packages (`oracledb` and `customtkinter`, listed in
 `requirements.txt`) are installed automatically into a local virtual
 environment on the first run, so they do not have to be installed by hand.
 
@@ -81,8 +82,8 @@ current Tk, and on Debian or Ubuntu it comes from `sudo apt install python3-tk`.
 
 ### The short way: one launcher
 
-Start Docker, then start the project with the launcher for your system. There
-is one for each, and they do exactly the same work:
+Start the project with the launcher for your system. There is one for each,
+and they do exactly the same work:
 
 | What you want | macOS | Windows | Any terminal |
 |---|---|---|---|
@@ -133,7 +134,7 @@ chmod +x run.sh run.command
 
 | What you see | What it means |
 |---|---|
-| `Docker is installed but not running` | Start Docker Desktop or Colima, then try again. |
+| `Docker did not become ready in time` | Docker was started but took too long. Wait for its icon to settle, then run the launcher again. |
 | `The database did not become ready in time` | Oracle is still starting, or it failed. Run `docker compose logs oracle` to see what it says. |
 | `ORACLE_PASSWORD environment variable is not set` | The application was started by hand rather than through the launcher. See step 4 below. |
 | `Can't find a usable init.tcl` | Python cannot find its graphics library. This is a Python installation problem, described next. |

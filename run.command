@@ -14,11 +14,13 @@ cd "$(dirname "$0")"
 chmod +x run.sh 2>/dev/null
 
 ./run.sh "$@"
-
 status=$?
+
+# Terminal closes the window the moment the script ends, taking the last message
+# with it, so always wait for a keypress rather than only after a failure.
+echo
 if [ "$status" -ne 0 ]; then
-    echo
     echo "The launcher stopped with an error. The message above explains why."
-    echo "Press any key to close this window."
-    read -n 1 -s -r
 fi
+read -r -p "Press Return to close this window. "
+exit $status

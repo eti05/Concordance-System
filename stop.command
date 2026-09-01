@@ -8,7 +8,8 @@
 cd "$(dirname "$0")"
 chmod +x run.sh 2>/dev/null
 ./run.sh --stop
+status=$?
 
 echo
-echo "Press any key to close this window."
-read -n 1 -s -r
+read -r -p "Press Return to close this window. "
+exit $status
