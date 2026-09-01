@@ -1,0 +1,10 @@
+# Runtime dependency: the Oracle driver (thin mode, no Oracle Client needed).
+oracledb>=2.0
+
+# Runtime dependency: the GUI toolkit named in the design's technology table.
+# CustomTkinter draws its own widgets on top of Tkinter, so the palette is
+# honoured identically on macOS, Windows and Linux.
+customtkinter>=5.2
+
+# Development only: the test runner.
+pytest>=7.0

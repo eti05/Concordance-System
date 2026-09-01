@@ -1,0 +1,27 @@
+# Oracle database for the project.
+# Start with: docker compose up -d
+
+services:
+  oracle:
+    image: gvenzl/oracle-free:23-slim
+    container_name: concordance-oracle
+
+    ports:
+      - "1521:1521"
+
+    environment:
+      ORACLE_PASSWORD: oracle
+      APP_USER: concordance
+      APP_USER_PASSWORD: concordance
+
+    volumes:
+      - oracle-data:/opt/oracle/oradata
+
+    healthcheck:
+      test: ["CMD", "healthcheck.sh"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+volumes:
+  oracle-data:
