@@ -19,54 +19,53 @@ if not defined ORACLE_DSN      set "ORACLE_DSN=localhost:1521/FREEPDB1"
 
 set "CONTAINER=concordance-oracle"
 
-if /I "%~1"=="--stop" (
-    docker info >nul 2>&1
-    if errorlevel 1 (
-        echo Docker is not running, so there is nothing to stop.
-        pause & exit /b 0
-    )
-    echo Stopping the database container ...
-    docker compose down >nul 2>&1
-    echo Done. The loaded data is kept for next time.
-    pause & exit /b 0
-)
+REM Argument handling is flattened with goto rather than nested in
+REM parenthesised blocks, because cmd does not handle a nested if plus a label
+REM inside parentheses reliably. stop.bat and clean.bat do the same work
+REM without calling this file at all.
+if /I "%~1"=="--stop"  goto do_stop
+if /I "%~1"=="--clean" goto do_clean
+goto begin
 
-if /I "%~1"=="--clean" (
-    echo This removes the database container, the loaded corpus and the local
-    echo virtual environment. The project files themselves are not touched.
-    set /p "ANSWER=Type 'yes' to continue: "
-    if /I not "!ANSWER!"=="yes" (
-        echo Cancelled.
-        pause & exit /b 0
-    )
-    docker info >nul 2>&1
-    if errorlevel 1 (
-        echo Docker is not running, so the container could not be removed.
-        echo Start Docker and run this again to remove the data volume.
-    ) else (
-        echo Removing the container and its data volume ...
-        docker compose down --volumes >nul 2>&1
-    )
-    echo Removing the virtual environment ...
-    if exist ".venv" rmdir /s /q ".venv"
-    if exist "__pycache__" rmdir /s /q "__pycache__"
-    if exist "ui\__pycache__" rmdir /s /q "ui\__pycache__"
-    if exist "tests\__pycache__" rmdir /s /q "tests\__pycache__"
-    if exist ".pytest_cache" rmdir /s /q ".pytest_cache"
-    echo Done. Nothing of this project is left running or stored.
-    pause & exit /b 0
-)
-
-where docker >nul 2>&1
+:do_stop
+docker info >nul 2>&1
 if errorlevel 1 (
-    echo ERROR: Docker is not installed or not on PATH.
-    pause & exit /b 1
+    echo Docker is not running, so there is nothing to stop.
+    pause & exit /b 0
 )
+echo Stopping the database container ...
+docker compose down >nul 2>&1
+echo Done. The loaded data is kept for next time.
+pause & exit /b 0
 
-REM Docker being installed is not the same as Docker running. Start Docker
-REM Desktop here rather than asking someone who double clicked an icon to go
-REM and do it by hand. %ProgramFiles% is expanded by cmd itself, so no path
-REM has to be captured from a pipe.
+:do_clean
+echo This removes the database container, the loaded corpus and the local
+echo virtual environment. The project files themselves are not touched.
+set "ANSWER="
+set /p "ANSWER=Type yes to continue: "
+if /I not "%ANSWER%"=="yes" (
+    echo Cancelled. Nothing was changed.
+    pause & exit /b 0
+)
+docker info >nul 2>&1
+if errorlevel 1 (
+    echo Docker is not running, so the container could not be removed.
+    echo Start Docker and run this again to remove the data volume.
+) else (
+    echo Removing the container and its data volume ...
+    docker compose down --volumes >nul 2>&1
+)
+echo Removing the virtual environment ...
+if exist ".venv" rmdir /s /q ".venv"
+if exist "__pycache__" rmdir /s /q "__pycache__"
+if exist "ui\__pycache__" rmdir /s /q "ui\__pycache__"
+if exist "tests\__pycache__" rmdir /s /q "tests\__pycache__"
+if exist "scripts\__pycache__" rmdir /s /q "scripts\__pycache__"
+if exist ".pytest_cache" rmdir /s /q ".pytest_cache"
+echo Done. Nothing of this project is left running or stored.
+pause & exit /b 0
+
+:begin
 REM Kept flat rather than nested in an if block: a label and a goto inside a
 REM parenthesised block are not handled reliably by cmd.
 docker info >nul 2>&1
